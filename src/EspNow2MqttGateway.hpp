@@ -14,12 +14,12 @@
 #include <set>
 #include <functional>
 
-#define MQTT_CLIENT_ID "EspNow"
+#define MQTT_CLIENT_ID "EspNowMqttBridge"
 #define MQTT_ROOT_TOPIC MQTT_CLIENT_ID "/"
-#define MQTT_WILL_TOPIC MQTT_CLIENT_ID "_will"
+#define MQTT_STATIS_TOPIC MQTT_ROOT_TOPIC "status"
 #define MQTT_WILL_QUOS 1
-#define MQTT_WILL_RETAIN false
-#define MQTT_WILL_MSG "EspNow2MqttBridge died!"
+#define MQTT_WILL_RETAIN true
+#define MQTT_WILL_MSG "offline"
 
 void EspNow2Mqtt_onResponseSent(const uint8_t *mac_addr, esp_now_send_status_t status);
 void EspNow2Mqtt_onDataReceived(const uint8_t * mac_addr, const uint8_t *incomingData, int len);
@@ -236,7 +236,11 @@ void EspNow2MqttGateway::subscribeHandler(const uint8_t * mac_addr, char* client
 
 void EspNow2MqttGateway::mqttConnect(){
     Serial.println("connecting to mqtt");
-    bool mqttStatus = mqttClient.connect(mqttId, mqttUser, mqttPassword, MQTT_WILL_TOPIC, MQTT_WILL_QUOS, MQTT_WILL_RETAIN, MQTT_WILL_MSG);
+    bool mqttStatus = mqttClient.connect(mqttId, mqttUser, mqttPassword, MQTT_STATIS_TOPIC, MQTT_WILL_QUOS, MQTT_WILL_RETAIN, MQTT_WILL_MSG);
+    if (mqttStatus)
+    {
+        mqttClient.publish(MQTT_STATIS_TOPIC, "online", true);
+    }
     Serial.println(mqttStatus?"connected to mqtt":"cannot connect to mqtt");
 }
 

@@ -25,11 +25,11 @@ class EspNow2MqttClient
 private:
     static EspNow2MqttClient* singletonInstance;
     std::string name;
-    uint8_t serverMac[6] ;
-    CriptMsg crmsg = CriptMsg();
+    uint8_t serverMac[6];
+    CriptMsg crmsg;
     int channel;
 public:
-    EspNow2MqttClient(std::string name, byte* key, u8_t* serverMac, int channel = 0);
+    EspNow2MqttClient(const std::string& name, byte key[16], u8_t* serverMac);
     ~EspNow2MqttClient();
     static EspNow2MqttClient* GetInstance() {return singletonInstance;}
     int init();
@@ -74,12 +74,11 @@ void EspNow2Mqtt_onSentRecipe(const uint8_t *mac_addr, esp_now_send_status_t sta
 
 // -- class implementation ------------------------------------------------------------------------
 
-EspNow2MqttClient::EspNow2MqttClient(std::string name, byte* key, u8_t* serverMac, int channel):
-    name(name)
+EspNow2MqttClient::EspNow2MqttClient(const std::string& name, byte key[16], u8_t* serverMac):
+    name(name), crmsg(key, sizeof(byte) * 16)
 {
-    std::copy(key, key+crmsg.keySize, crmsg.key);
     std::copy(serverMac, serverMac + 6, this->serverMac);
-    this->channel = channel;
+    this->channel = 0;
     this->singletonInstance = this;
 }
 
