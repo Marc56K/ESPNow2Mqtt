@@ -29,28 +29,28 @@ class EspNow2MqttGateway
 {
 private:
     static EspNow2MqttGateway *espNow2MqttGatewaySingleton;
-    CriptMsg crmsg = CriptMsg();
+    CriptMsg crmsg;
     response gwResponse = response_init_zero;
     request decodedRequest = request_init_default;
     response emptyResponse = response_init_zero;
     request defaultRequest = request_init_default;
     EspNowUtil eNowUtil;
     PubSubClient mqttClient;
-    char * mqttId;
-    char * mqttUser;
-    char * mqttPassword;
+    const char * mqttId;
+    const char * mqttUser;
+    const char * mqttPassword;
     std::map <String,String> topics;
     std::set <String> subscriptions;
 public:
-    EspNow2MqttGateway(byte* key, Client& cnx, const char * mqttServer, const int mtttport = 1883, int espnowChannel = 0, char* mqttID = MQTT_CLIENT_ID, char* mqttUser = NULL, char* mqttPassword = NULL);
+    EspNow2MqttGateway(byte* key, Client& cnx, const char * mqttServer, const int mtttport = 1883, const char* mqttID = MQTT_CLIENT_ID, const char* mqttUser = NULL, const char* mqttPassword = NULL);
     ~EspNow2MqttGateway();
-    int init();
+    int init(int espnowChannel = 0);
     static EspNow2MqttGateway* getSingleton() {return espNow2MqttGatewaySingleton;}
     void espNowHandler(const uint8_t * mac_addr, const uint8_t *incomingData, int len);
     void loop();
     int getNumberOfSubscriptions(){return this->subscriptions.size();}
     int getNumberOfMessages(){return this->topics.size();}
-    void sendGwMqttMessage(char*topic, char*payload);
+    void sendGwMqttMessage(const char* topic, const char* payload);
 private:
     void mqttConnect();
     void resusbcribe();
@@ -58,7 +58,7 @@ private:
     void sendHandler(const uint8_t * mac_addr, char* clientId, request_Send & ping, response_OpResponse & rsp);
     void subscribeHandler(const uint8_t * mac_addr, char* clientId, request_Subscribe & ping, response_OpResponse & rsp);
     void buildResponse (response_Result code, const char * payload , response_OpResponse & rsp);
-    String buildQueueName (char * clientId, char * name);
+    String buildQueueName (const char * clientId, const char * name);
     bool deserializeRequest(request &rq, const uint8_t *incomingData, int len);
     int serializeResponse (uint8_t * buffer, response &rsp);
     friend void EspNow2Mqtt_onResponseSent(const uint8_t *mac_addr, esp_now_send_status_t status);
@@ -115,11 +115,9 @@ void EspNow2Mqtt_subscribe(){
 }
 
 // -- class implementation ------------------------------------------------------------------------
-EspNow2MqttGateway::EspNow2MqttGateway(byte* key, Client& cnx, const char * mqttServer, const int mtttPort, int espnowChannel, char* mqttID, char* mqttUser, char* mqttPassword):
-eNowUtil(espnowChannel), 
-mqttClient(mqttServer, mtttPort, EspNow2Mqtt_mqttCallback, cnx)
+EspNow2MqttGateway::EspNow2MqttGateway(byte key[16], Client& cnx, const char * mqttServer, const int mtttPort, const char* mqttID, const char* mqttUser, const char* mqttPassword):
+crmsg(key, sizeof(byte) * 16), eNowUtil(), mqttClient(mqttServer, mtttPort, EspNow2Mqtt_mqttCallback, cnx)
 {
-    std::copy(key, key+crmsg.keySize, crmsg.key);
     espNow2MqttGatewaySingleton = this;
     this->mqttUser = mqttUser; 
     this->mqttPassword = mqttPassword;
@@ -131,15 +129,18 @@ EspNow2MqttGateway::~EspNow2MqttGateway()
     mqttClient.disconnect();
 }
 
-int EspNow2MqttGateway::init()
+int EspNow2MqttGateway::init(int espnowChannel)
 {
+    eNowUtil.setChannel(espnowChannel);
+
     //connecto to mqtt
     mqttConnect();
     //init esp-now, gw will be registered as a handler for incoming messages
-    Serial.println("initiating espnow");
+    Serial.println("initiating espnow ...");
     if (esp_now_init() != ESP_OK) {
         Serial.println("Error initializing ESP-NOW");
     }
+    Serial.println("espnow is ready");
     return 0;
 }
 
@@ -255,7 +256,7 @@ void EspNow2MqttGateway::loop (){
     }
 }
 
-String EspNow2MqttGateway::buildQueueName (char * clientId, char * name){
+String EspNow2MqttGateway::buildQueueName (const char * clientId, const char * name){
     String queue = String(MQTT_ROOT_TOPIC);
     queue.concat(clientId);
     queue.concat("/");
@@ -297,7 +298,7 @@ inline int EspNow2MqttGateway::serializeResponse (uint8_t * buffer, response &rs
     return messageLength;
 }
 
-void EspNow2MqttGateway::sendGwMqttMessage(char*topic, char*payload)
+void EspNow2MqttGateway::sendGwMqttMessage(const char* topic, const char* payload)
 {
     if ( mqttClient.connected() ){
         String queue = buildQueueName("gw", topic);

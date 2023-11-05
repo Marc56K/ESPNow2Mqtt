@@ -13,6 +13,7 @@ private:
 public:    
     EspNowUtil(int channel = 0){ this->channel = channel; }
     ~EspNowUtil(){}
+    void setChannel(int channel){ this->channel = channel; }
     void pair(const uint8_t * mac_addr);
     void send(const uint8_t * mac_addr, uint8_t * outputBuffer, int outputBufferLen);
 };
