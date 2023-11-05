@@ -200,7 +200,7 @@ void EspNow2MqttGateway::sendHandler(const uint8_t * mac_addr, char* clientId, r
 {
     if ( mqttClient.connected() ){
         String queue = buildQueueName(clientId, send.queue);
-        bool sendStatus = mqttClient.publish(queue.c_str(), send.payload);
+        bool sendStatus = mqttClient.publish(queue.c_str(), (const char*)send.payload, true);
         if (sendStatus) {
             buildResponse(response_Result_OK, NULL, rsp);
         } else {
@@ -225,7 +225,7 @@ void EspNow2MqttGateway::subscribeHandler(const uint8_t * mac_addr, char* client
             buildResponse(response_Result_NO_MSG, NULL, rsp);
         }
     } else { 
-        if (mqttClient.subscribe(queue.c_str())){
+        if (mqttClient.subscribe(queue.c_str(), 1)){
             subscriptions.insert(queue);
             buildResponse(response_Result_NO_MSG, "now subscribed", rsp);
         } else {
@@ -246,7 +246,7 @@ void EspNow2MqttGateway::mqttConnect(){
 
 void EspNow2MqttGateway::resusbcribe(){
     for (auto subscription : this->subscriptions){
-        mqttClient.subscribe(subscription.c_str());
+        mqttClient.subscribe(subscription.c_str(), 1);
     }
     Serial.printf("resuscribed to %d topics\n", this->getNumberOfSubscriptions());
 }
@@ -306,7 +306,7 @@ void EspNow2MqttGateway::sendGwMqttMessage(const char* topic, const char* payloa
 {
     if ( mqttClient.connected() ){
         String queue = buildQueueName("gw", topic);
-        bool sendStatus = mqttClient.publish(queue.c_str(), payload);
+        bool sendStatus = mqttClient.publish(queue.c_str(), payload, true);
         if (!sendStatus) {
             Serial.printf ("Error cannot sendGwMqttMessage to %s topic {%s} because code %i", topic, payload, sendStatus);
         }

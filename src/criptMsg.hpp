@@ -11,7 +11,7 @@ class CriptMsg
 private:
     ChaCha cc;
     uint8_t rounds = 8;
-    byte iv[8] = {10, 20, 30, 40, 50, 60, 70, 80}; // TODO randomize this init vector
+    byte iv[8] = {10, 20, 30, 40, 50, 60, 70, 80};
     byte counter[8] = {11, 22, 33, 44, 55, 66, 77, 88};
 
 public:
